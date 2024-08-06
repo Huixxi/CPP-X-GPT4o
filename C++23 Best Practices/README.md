@@ -4,7 +4,7 @@
 2. 更快速的定位错误 Finding errors quickly
 3. 不牺牲代码性能（用C++编程一定是出于性能考虑） Without sacrificing (and often improving) performance
 
-## 2.最佳实践（Best Practices）
+## 2.使用工具（Use The Tools）
 1. 假如一个解决方案庞大又复杂，请停下来。 If the solution seems large or complex, stop.
 2. 花在写代码上的时间越少，用来思考的时间就越多。 The less time I spend programming, and the more time I spend thinking.
 3. C++不止是一个面向对象语言。 C++ is not an object-oriented language(OOL).
@@ -32,8 +32,109 @@
    * clang-tidy：一个强大的 C++ 静态代码分析工具，提供了丰富的检查规则和自动修复功能。
    * CodeQL：GitHub 提供的代码分析引擎，通过查询语言来发现代码中的安全和性能问题。
 10. 使用运行时分析工具（Sanitizers）
+    * [使用手册](https://github.com/Huixxi/CPP-X-GPT4o/blob/main/C%2B%2B23%20Best%20Practices/gpt-sanitizers.md)
+    * 使用Dr Memory或Valgrind
+    * Address (ASan)
+    * Undefined Behavior (UBSan) (More on Undefined Behavior later)
+    * Thread (TSan)
+    * DataFlow (use for code analysis, not finding bugs)
+    * Lib Fuzzer (addressed in a later chapter)
+11. 使用多重编译器 Multiple Compilers
+    * 在GCC和Clang二者间切换编译
+12. 使用模糊测试和变异测试 Fuzz test and Mutation test
+    * Fuzz testers generate strings of random data of various lengths.
+      * [LLVM’s libFuzzer](https://www.llvm.org/docs/LibFuzzer.html)
+      * [Google FuzzTest](https://github.com/google/fuzztest)
+      * [DeepState](https://github.com/trailofbits/deepstate)
+      * [oss-fuzz](https://github.com/google/oss-fuzz)
+    * Mutation testing works by modifying conditionals and constants in the codebeing tested.
+      * [Mutate++](https://github.com/nlohmann/mutate_cpp)
+13. 使用代码构建生成器 Build Generators
+    * 写好自己的编译脚本 build scripts
+    * [CMake](https://cmake.org)
+    * [Meson](https://mesonbuild.com/)
+    * [Bazel](https://bazel.build/)
+    * [Others](https://github.com/lefticus/cppbestpractices/blob/master/02-Use_the_Tools_Available.md)
+14. 使用打包管理器 Package Managers
+    * [Vcpkg](https://github.com/Microsoft/vcpkg)
+    * [Conan](https://conan.io/)
+    * [CPM](https://github.com/cpm-cmake/CPM.cmake)
 
+## 3.API和代码设计指南（API and CodeDesign Guidelines）
+1. 让你的接口很难被用错 Make your interfaces hardto use wrong.
+2. 考虑在错误使用了API的时候会引发未定义的行为 Consider If Using the APIWrong Invokes UndefinedBehavior
+3. 对全局状态保持敬畏 Be Afraid of Global State
+   * 任何`non-const static`值或`std::shared_ptr<>`都可能是全局状态。永远不知道谁会更新该值，也不知道这样做是否是线程安全的。
+   * 尽量避免使用单例模式（singletons）
 
+### 使用强类型（Strongly Typed API）
+```c++
+// Poorly defined constructor.
+Rectangle(int, int, int, int);
+// vs
+struct Position {
+  int x;
+  int y;
+};
+
+struct Size {
+  int width;
+  int height;
+};
+
+struct Rectangle {
+  Position position;
+  Size size;
+};
+
+Rectangle(Position, Size);
+```
+
+### 避免使用Boolean类型参数（Avoid Boolean Arguments）
+```c++
+struct Widget {
+  // this constructor is easy to use wrong, we
+  // can easily transpose the parameters
+  Widget(bool visible, bool resizable);
+}
+
+struct Widget {
+  enum struct Visible { True, False };
+  enum struct Resizable { True, False };
+  // still possible to use this wrong, but MUCH harder
+  Widget(Visible visible, Resizable resizable);
+}
+```
+
+### 考虑用 =delete 去规避可能造成问题的类型转换
+```c++
+// Deleting a problematic accidental promotion from ‘float‘ to ‘double‘
+double high_precision_thing(double);
+double high_precision_thing(float) = delete;
+```
+
+### 自由的使用`[[nodiscard]]`关键字
+[[nodiscard]]是一个C++属性，它告诉编译器在忽略返回值时发出警告。它可用于以下功能：
+```c++
+[[nodiscard]] int get_value();
+int main() {
+  // warning, [[nodiscard]] value ignored
+  get_value();
+}
+```
+```c++
+// ‘[[nodiscard]]‘ on types
+struct [[nodiscard]] ErrorCode{};
+ErrorCode get_value();
+int main() {
+  // warning, [[nodiscard]] value ignored
+  get_value();
+}
+```
+```c++
+// C++20’s‘[[nodiscard]]‘with description
+[[nodiscard("Ignoring this result leaks resources")]]
+```
 
 ### 资源获取即初始化（RAII）
 
