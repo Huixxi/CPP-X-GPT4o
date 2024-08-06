@@ -136,6 +136,12 @@ int main() {
 [[nodiscard("Ignoring this result leaks resources")]]
 ```
 
+### C++23中引入的 modules 的实现和使用
+略.
+
+### 栈优先于堆（Prefer Stack Over Heap）
+
+
 ### 资源获取即初始化（RAII）
 
 ### 循环语句（for-loop）
