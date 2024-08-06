@@ -16,6 +16,24 @@
    * `ranges`
    * `concepts`
    * `<stacktrace>` 和其他诊断工具。 other diagnostics helpers.
+6. 不要引发未定义行为。Don’t Invoke Undefind Behavior(UB).
+   * `-Wtautological-undefined-compare`
+   * 不要检查`this == nullptr`
+   * 不要检查一个`&thing == nullptr`
+7. 使用自动化测试工具（Automated Tests Tools）
+   * [Catch2](https://github.com/catchorg/Catch2)
+   * [Doctest](https://github.com/doctest/doctest)
+   * [Googletest](https://github.com/google/googletest)
+8. 使用编译器警告（Compiler Warnings）
+   * 强烈考虑`-Wpedantic`。 Strongly consider `-Wpedantic` (GCC/Clang).
+   * MSVC编译使用/W1～/W4
+9. 使用静态分析工具（Static Analysis）
+   * cppcheck：一个轻量级的 C/C++ 静态代码分析工具，专注于发现错误和漏洞。
+   * clang-tidy：一个强大的 C++ 静态代码分析工具，提供了丰富的检查规则和自动修复功能。
+   * CodeQL：GitHub 提供的代码分析引擎，通过查询语言来发现代码中的安全和性能问题。
+10. 使用运行时分析工具（Sanitizers）
+
+
 
 ### 资源获取即初始化（RAII）
 
