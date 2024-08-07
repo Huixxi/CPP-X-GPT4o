@@ -370,14 +370,44 @@ constexpr void do_things() {
 了解Bloaty McBloatface and `-ftime-trace`。详见：[gpt-shrinkbinary.md](https://github.com/Huixxi/CPP-X-GPT4o/blob/main/C%2B%2B23%20Best%20Practices/gpt-shrinkbinary.md)
 
 ### 使用Lippincott Functions
+```c++
+void handle_exception() {
+  try {
+    throw; // re-throw exception already in flight
+  } catch (const std::runtime_error &) {
+  } catch (const std::exception &) { }
+}
 
+void use_thing() {
+  try {
+    do_thing();
+  } catch (...) {
+    handle_exception();
+  }
+}
 
-### 资源获取即初始化（RAII）
+void use_other_thing() {
+  try {
+    do_other_thing();
+  } catch (...) {
+    handle_exception();
+  }
+}
+```
 
-### 循环语句（for-loop）
+### 不要再使用`new`
+使用clang-tidy自动将`new`语句转成`make_unique<>``make_shared<>`调用
+* 使用`std::unique<>()`
+* 极少数情况使用`std::shared<>()`
 
-### 
+### 避免使用std::bind和std::function
+略.
 
+### 对非传统类型变量不要使用列表初始化方法（initializer_list）
+略.
+
+### 在C++20标准中使用Designated Initializers
+详见：[gpt-designated_initializers.md](https://github.com/Huixxi/CPP-X-GPT4o/blob/main/C%2B%2B23%20Best%20Practices/gpt-designated_initializers.md)
 
 ## 3.资料（Resources）
 * https://www.alcf.anl.gov/sites/default/files/2020-04/BestPractices-101-miniQMC-CaseStudy.pdf
