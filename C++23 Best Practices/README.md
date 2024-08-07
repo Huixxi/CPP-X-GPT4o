@@ -367,7 +367,10 @@ constexpr void do_things() {
   auto value = some_function();
 }
 ```
-了解Bloaty McBloatface and `-ftime-trace`.
+了解Bloaty McBloatface and `-ftime-trace`。详见：[gpt-shrinkbinary.md](https://github.com/Huixxi/CPP-X-GPT4o/blob/main/C%2B%2B23%20Best%20Practices/gpt-shrinkbinary.md)
+
+### 使用Lippincott Functions
+
 
 ### 资源获取即初始化（RAII）
 
