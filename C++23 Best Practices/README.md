@@ -140,6 +140,84 @@ int main() {
 略.
 
 ### 栈优先于堆（Prefer Stack Over Heap）
+`std::string`本身可能会在内部分配，并使用heap，应尽量避免不必要的堆内存开销。通过`new`或者`make_unique`或`make_shared`创建的对象会分配在堆上。
+使用heap profiling工具查找代码中堆内存滥用的情况。
+* [heaptrack - a heap memory profiler for Linux](https://github.com/KDE/heaptrack)
+* [Valgrind Massif: a heap profiler](https://valgrind.org/info/tools.html#massif)
+
+### 不要返回裸指针
+能否通过返回一个值（value）、引用（reference）或`std::unique_ptr`作为替换。
+
+### `std:array<>`优先于`std::vector<>`
+略.
+
+### Be Aware of Custom Allocation And Polymorphic Memory Resources(PMR)
+略.
+
+### 使用Concepts
+cppreference提供了一个[concepts列表](https://en.cppreference.com/w/cpp/concepts)。
+```c++
+import std;
+template <typename Numerator, typename Denominator>
+[[nodiscard]] constexpr auto divide(Numerator numerator, Denominator denominator) {
+  if constexpr (std::is_integral_v<Numerator> &&
+                std::is_integral_v<Denominator>) {
+    // is integral division
+    if (denominator == 0) {
+      throw std::runtime_error("divide by 0!");
+    }
+  }
+  return numerator / denominator;
+}
+```
+Conceptsin ‘requires‘ clause.
+```c++
+import std;
+// overload resolution will pick the most specific version
+template <typename Numerator, typename Denominator>
+[[nodiscard]] constexpr auto divide(Numerator numerator, Denominator denominator) requires(
+    std::is_integral_v<Numerator>
+    && std::is_integral_v<Denominator>) {
+  // is integral division
+  if (denominator == 0) {
+    throw std::runtime_error("divide by 0!");
+  }
+  return numerator / denominator;
+}
+
+template <typename Numerator, typename Denominator>
+[[nodiscard]] constexpr auto divide(Numerator numerator, Denominator denominator) {
+  return numerator / denominator;
+}
+```
+Terse concepts requirement syntax, C++20 even has an “autoconcept,” which is an implicit template function.
+```c++20
+import std;
+[[nodiscard]] constexpr auto divide(std::integral auto numerator, std::integral auto denominator) {
+  // is integer division
+  if (denominator == 0) {
+    throw std::runtime_error("divide by 0!");
+  }
+  return numerator / denominator;
+}
+
+[[nodiscard]] constexpr auto divide(auto numerator, auto denominator) {
+  // is floating point division
+  return numerator / denominator;
+}
+```
+代码中，`std::integral` 是一个概念（`concept`），用于限制模板参数的类型。C++20 引入了概念（`concepts`），这是模板编程的一种新特性，旨在提供更好的类型约束和更友好的编译器错误信息。  
+`std::integral` 是标准库中定义的一个概念，用于检查一个类型是否是整型。它是 `std::concepts` 命名空间的一部分：
+```c++
+namespace std::concepts {
+    template<class T>
+    concept integral = std::is_integral_v<T>;
+}
+```
+在代码中，`std::integral auto` 限制了 `divide` 函数的参数 `numerator` 和 `denominator` 必须是整型类型。这意味着你只能用整型类型（例如 `int, long, short, unsigned int` 等）来调用这个函数。
+
+### 理解`consteval`和`constinit`
+详见：
 
 
 ### 资源获取即初始化（RAII）
