@@ -31,9 +31,8 @@
    * cppcheck：一个轻量级的 C/C++ 静态代码分析工具，专注于发现错误和漏洞。
    * clang-tidy：一个强大的 C++ 静态代码分析工具，提供了丰富的检查规则和自动修复功能。
    * CodeQL：GitHub 提供的代码分析引擎，通过查询语言来发现代码中的安全和性能问题。
-10. 使用运行时分析工具（Sanitizers）
-    * [使用手册](https://github.com/Huixxi/CPP-X-GPT4o/blob/main/C%2B%2B23%20Best%20Practices/gpt-sanitizers.md)
-    * 使用Dr Memory或Valgrind
+10. 使用运行时分析工具（Sanitizers，详见：[gpt-sanitizers.md](https://github.com/Huixxi/CPP-X-GPT4o/blob/main/C%2B%2B23%20Best%20Practices/gpt-sanitizers.md)）
+    * 使用Dr Memory或Valgrind Memcheck
     * Address (ASan)
     * Undefined Behavior (UBSan) (More on Undefined Behavior later)
     * Thread (TSan)
@@ -155,7 +154,8 @@ int main() {
 略.
 
 ### 使用Concepts
-cppreference提供了一个[concepts列表](https://en.cppreference.com/w/cpp/concepts)。
+与SFINAE相比，概念（concept）将（最终）产生更好的错误消息和更好的编译时间，比SFINAE更易读的代码。cppreference提供了一个[concepts列表](https://en.cppreference.com/w/cpp/concepts)。
+> SFINAE（Substitution Failure Is Not An Error）是 C++ 模板编程中的一个重要概念。它的意思是：在模板实例化过程中，如果模板参数替换导致了不匹配或者无效的表达式，那么这种替换失败不会被视为编译错误，而是会导致模板被忽略，然后编译器会尝试其他匹配的模板。
 ```c++
 import std;
 template <typename Numerator, typename Denominator>
@@ -170,7 +170,7 @@ template <typename Numerator, typename Denominator>
   return numerator / denominator;
 }
 ```
-Conceptsin ‘requires‘ clause.
+Concepts in ‘requires‘ clause.
 ```c++
 import std;
 // overload resolution will pick the most specific version
@@ -217,8 +217,157 @@ namespace std::concepts {
 在代码中，`std::integral auto` 限制了 `divide` 函数的参数 `numerator` 和 `denominator` 必须是整型类型。这意味着你只能用整型类型（例如 `int, long, short, unsigned int` 等）来调用这个函数。
 
 ### 理解`consteval`和`constinit`
-详见：
+详见：[gpt-constxxx.md](https://github.com/Huixxi/CPP-X-GPT4o/blob/main/C%2B%2B23%20Best%20Practices/gpt-constxxx.md)
 
+### 使用Spaceships`<=>`
+```c++
+struct MyData {
+  int i;
+  int j;
+  // provide all comparisons
+  friend auto operator<=>(const MyData &, const MyData &) = default;
+};
+```
+
+### 遵循Rule0/3/5
+**Rule 0:**  
+大多数类不应该有任何的用户定义的拷贝/移动构造函数，赋值操作符和析构函数（copy/move constructor、assignment operator or destructor）   
+**Rule 5:**  
+如果你提供析构函数是因为`std::unique_ptr`对你的用例没有意义，你必须`=delete`、`=default`或实现其他特殊成员函数。
+
+## 4.代码实现指南（Code Implementation Guidelines）
+不要复制粘贴代码。使用[PMD CPD(copy-paste-detectors) tool](https://pmd.github.io/latest/pmd_userdocs_cpd.html)
+
+### 相比`iostream`或`c-formatting`更偏向使用`format`
+C++20添加了`<format>`头，它提供了`std::format`方法。
+```c++
+std::format("Hello {}!\n", "Jason");
+```
+
+### 使用`constexpr`
+* 使用`constexpr`替换`const`
+* 使用`static constexpr`替换`static const`
+* 将头文件当中的全局变量编程`inline constexpr`
+```c++
+// my_library.hpp
+// the object `dataset` will exist once in the entire binary
+inline constexpr auto dataset = make_data();
+```
+
+### `cosnt`一切事情
+它迫使我们思考影响性能的对象的初始化和生命周期，并向代码的读者传达意义。
+```c++
+// Prefer not naming temporaries
+ReturnType some_function(int value) {
+  // if the types of result and ReturnType differ,
+  // and an implicit conversion exists, you get
+  // implicit moves.
+  // If they are the same, then guaranteed
+  // copy/move elision applies from C++17
+  return get_value(value + 42);
+}
+```
+
+### 在多数情况下都选择`auto`
+```c++
+const auto result = std::count( /* stuff */ );
+auto const result = std::count( /* stuff */ );
+```
+
+### 永远要初始化`non-const`, `non-auto`的变量
+略.
+
+### 使用Ranges和Views为了正确性和可读性
+```c++
+void print_all_but_first(const std::vector<int> &values) {
+  for (const auto val : values | std::views::drop(1)) {
+    std::println("{}", val);
+  }
+}
+// 但不要重复使用Views
+import std;
+int main() {
+  std::list<int> values{1,2,3,4,5,6,7,8,9};
+  auto drop_2 = []{ return values | std::views::drop(2); };
+  std::println("{}", drop_2());
+  values.erase(values.begin());
+  std::println("{}", drop_2());
+}
+```
+
+### 相比于循环更倾向于Algorithms
+Algorithms能传达意义，并帮助我们应用“const All the Things”规则。在C++20中，我们得到了Ranges，这使得Algorithms更易于使用。
+```c++
+const auto has_value = std::any_of(container, greater_than(12));
+const auto has_value = std::any_of(begin(container), end(container), greater_than(12));
+```
+
+### 使用range-for循环
+使用clang-tidy的[`modernize-loop-convert`](https://clang.llvm.org/extra/clang-tidy/checks/modernize-loop-convert.html)检查。
+```c++
+for(const auto &element : container) {
+  // eliminates both other problems
+}
+```
+使用偏好：
+* `const auto &` for non-mutating loops
+* `auto &` for mutating loops
+* `auto &&` only when you have to work with weird types like`std::vector<bool>`, or if moving elements out of the container
+
+```c++
+std::map<std::string, int> get_map();
+using element_type = std::pair<std::string, int>;
+for (const element_type & : get_map()) {
+}
+```
+
+### 避免default语句在switch语句中
+```c++
+enum class Values {
+  val1,
+  val2,
+  val3 // added a new value
+};
+[[nodiscard]] constexpr std::string_view get_name(Values value) {
+  switch (value) {
+  case Values::val1:
+    return "val1";
+  case Values::val2:
+    return "val2";
+  }
+  // unhandled enum value warning now
+  return "unknown";
+}
+```
+
+### 使用scoped enum
+```c++
+enum class Choices {
+  option1
+};
+
+enum class OtherChoices {
+  option2
+};
+
+int main() {
+  int val = option1; // cannot compile, need scope
+  int val2 = Choices::option1; // cannot compile, wrong type
+  Choices val = Choices::option1; // compiles
+  val = OtherChoices::option2; // cannot compile, wrong type
+}
+```
+
+### 去模板化你的通用代码
+尽可能将通用代码移出模板，去模板化将缩短编译时间并减少二进制文件大小。
+```c++
+constexpr auto some_function() { /* do things*/ }
+template<typename T>
+constexpr void do_things() {
+  auto value = some_function();
+}
+```
+了解Bloaty McBloatface and `-ftime-trace`.
 
 ### 资源获取即初始化（RAII）
 
